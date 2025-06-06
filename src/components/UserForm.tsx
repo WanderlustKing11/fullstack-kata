@@ -61,42 +61,49 @@ const UserForm: React.FC = () => {
 
     return (
         <>
-            <form onSubmit={handleSubmit}>
-                <label>
+            <form onSubmit={handleSubmit} className='space-y-4 bg-white shadow p-6 rounded w-full max-w-md mx-auto'>
+                <label className='block font-medium mb-1'>
                     Name:
                     <input  
                         type='text'
                         value={name}
                         onChange={e => setName(e.target.value)}
                         required
+                        className='w-full border border-gray-300 rounded px-3 py-2'
                     />
                 </label>
 
-                <label>
+                <label className='block font-medium mb-1'>
                     Email:
                     <input  
                         type='email'
                         value={email}
                         onChange={e => setEmail(e.target.value)}
                         required
+                        className='w-full border border-gray-300 rounded px-3 py-2'
                     />
                 </label>
 
-                <button type="submit">
+                <button 
+                    type="submit" 
+                    disabled={isSubmitting} 
+                    className='w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded disabled:opacity-50'
+                
+                >
                     {isSubmitting ? 'Submitting...' : 'Submit'}
                 </button>
             </form>
 
-            {errorMessage && <p style={{ color: 'red' }}>{errorMessage}</p>}
-            {successMessage && <p style={{ color: 'green' }}>{successMessage}</p>}
+            {errorMessage && <p className='text-red-600 text-center mt-2'>{errorMessage}</p>}
+            {successMessage && <p className='text-green-600 text-center mt-2'>{successMessage}</p>}
 
-            <hr />
+            <hr className='my-6' />
 
-            <h2>Users</h2>
-            <ul>
+            <h2 className='text-xl font-bold text-center mb-2'>Users</h2>
+            <ul className='space-y-2 max-w-md mx-auto'>
                 {users.map(user => (
-                    <li key={user.id}>
-                        {user.name} ({user.email})
+                    <li key={user.id} className='border-b pb-1 text-center'>
+                        <span className='font-medium'>{user.name}</span> ({user.email})
                     </li>
                 ))}
             </ul>
