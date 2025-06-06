@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { setDefaultResultOrder } from 'dns';
 
 interface User {
     id: number 
@@ -9,10 +10,13 @@ interface User {
     email: string
 }
 
-export default function Form() {  // Should we use an arrow function here instead?
+const UserForm: React.FC = () => {
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [users, setUsers] = useState<User[]>([]);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [errorMessage, setErroMessage] = useState('');
+    const [successMessage, setSuccessMessage] = useState('');
 
     const fetchUsers = async () => {
         try {
@@ -25,18 +29,33 @@ export default function Form() {  // Should we use an arrow function here instea
 
     useEffect(() => {
         fetchUsers();
-    }, [])
+    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();  // I forget, what is this preventDefault for?
+        e.preventDefault();
+        setErroMessage('');
+        setSuccessMessage('');
+
+        // front-end validation
+        if (!name.trim() || !email.trim()) {
+            setErroMessage('Name and email are required.');
+            return
+        }
+
+        setIsSubmitting(true);
 
         try {
             await axios.post('/api/submit', { name, email });
             setName('');
             setEmail('');
+            setSuccessMessage('User successfully added!');
             fetchUsers();
         } catch (error: any) {
-            console.error('❌ Error submitting form:', error.response?.data || error.message);
+            const msg = error.response?.data?.error || 'Something went wrong.';
+            setErroMessage(msg);
+            // console.error('❌ Error submitting form:', error.response?.data || error.message);
+        } finally {
+            setIsSubmitting(false);
         }
     }
 
@@ -63,8 +82,13 @@ export default function Form() {  // Should we use an arrow function here instea
                     />
                 </label>
 
-                <button type="submit">Submit</button>
+                <button type="submit">
+                    {isSubmitting ? 'Submitting...' : 'Submit'}
+                </button>
             </form>
+
+            {errorMessage && <p style={{ color: 'red' }}>{errorMessage}</p>}
+            {successMessage && <p style={{ color: 'green' }}>{successMessage}</p>}
 
             <hr />
 
@@ -79,3 +103,5 @@ export default function Form() {  // Should we use an arrow function here instea
         </>
     )
 }
+
+export default UserForm;
