@@ -274,35 +274,61 @@ Enhance `UserForm.tsx` with:
 ### Example additions:
 
 ```tsx
-const [isSubmitting, setIsSubmitting] = useState(false);
-const [errorMessage, setErrorMessage] = useState('');
-const [successMessage, setSuccessMessage] = useState('');
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setErrorMessage('');
-  setSuccessMessage('');
-
-  if (!name.trim() || !email.trim()) {
-    setErrorMessage('Name and email are required.');
-    return;
-  }
-
-  setIsSubmitting(true);
-
-  try {
-    await axios.post('/api/submit', { name, email });
-    setName('');
-    setEmail('');
-    setSuccessMessage('User successfully added!');
-    fetchUsers();
-  } catch (error: any) {
-    const msg = error.response?.data?.error || 'Something went wrong';
-    setErrorMessage(msg);
-  } finally {
-    setIsSubmitting(false);
-  }
+interface User {
+  id: number
+  name: string 
+  email: string 
 }
+
+const UserForm: React.FC = () => {
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [users, setUsers] = useState<User[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+
+  const fetchUsers = async () => {
+    try {
+      const response = await axios.get('/api/users');
+      setUsers(response.data);
+    } catch (error) {
+      console.error('❌ Failed to fetch users:', error);
+    }
+  }
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMessage('');
+    setSuccessMessage('');
+
+    if (!name.trim() || !email.trim()) {
+      setErrorMessage('Name and email are required.');
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      await axios.post('/api/submit', { name, email });
+      setName('');
+      setEmail('');
+      setSuccessMessage('User successfully added!');
+      fetchUsers();
+    } catch (error: any) {
+      const msg = error.response?.data?.error || 'Something went wrong';
+      setErrorMessage(msg);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
 ```
 
 Add messages to JSX:
@@ -321,13 +347,37 @@ Add messages to JSX:
 Update your route to reject duplicate emails:
 
 ```ts
-const existingUser = await prisma.user.findUnique({ where: { email } });
+export async function POST(req: NextRequest) {
+    try {
+        const body = await req.json();
+        const { name, email } = body;
+        
+        if (!name || !email) {
+            return NextResponse.json({ error: 'Name and email are required' }, {status: 400 });
+        }
 
-if (existingUser) {
-  return NextResponse.json(
-    { error: 'A user with that email already exists.' },
-    { status: 409 }
-  );
+        const existingUser = await prisma.user.findUnique({
+            where: { email }
+        });
+
+        if (existingUser) {
+            return NextResponse.json(
+                { error: 'A user with that email already exists.' },
+                { status: 409 }
+            );
+        }
+
+        const newUser = await prisma.user.create({
+            data: { name, email }
+        });
+
+        return NextResponse.json(newUser, { status: 201 });
+    } catch (error: any) {
+        return NextResponse.json(
+            { error: error.message || 'Internal Server Error' },
+            { status: 500 }
+        );        
+    }
 }
 ```
 
@@ -365,7 +415,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
 
 ### 2. Update `UserForm` with Delete Functionality
 
-Add delete handler:
+Add delete handler under the submit handler function:
 
 ```tsx
 const handleDelete = async (id: number) => {
@@ -388,7 +438,7 @@ Update user list JSX:
       <span>{user.name} ({user.email})</span>
       <button
         onClick={() => handleDelete(user.id)}
-        className="text-sm text-red-500 hover:underline"
+        className="text-sm text-red-500  cursor-pointer hover:underline"
       >
         Delete
       </button>
@@ -429,4 +479,3 @@ Optional next steps listed:
 
 
 Happy coding! 💻
-
