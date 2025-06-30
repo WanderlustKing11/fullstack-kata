@@ -253,89 +253,140 @@ export async function GET() {
     });
     return NextResponse.json(users);
 }
-```
-
-### 2. Update `UserForm` to Fetch and Show Users
-
-* Add `useEffect()` to fetch users
-* Render the user list below the form
 
 ---
 
 ## ✨ Stage 4: Validation & UX Feedback
 
-Enhance `UserForm.tsx` with:
+Enhance `UserForm.tsx` with fetching users and handling:
 
 * `isSubmitting`, `errorMessage`, and `successMessage` states
 * Front-end validation
+* Add `useEffect()` to fetch users
 * Feedback messages
+* Render the user list below the form
 * Submit button disable logic
 
-### Example additions:
+### Example UserForm.tsx:
 
 ```tsx
-import React, { useState, useEffect } from "react";
+'use client';
+
+import React, { useEffect, useState } from "react";
 import axios from "axios";
 
 interface User {
-  id: number
-  name: string 
-  email: string 
+    id: number 
+    name: string 
+    email: string
 }
 
-const UserForm: React.FC = () => {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [users, setUsers] = useState<User[]>([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
+const UserForm = () => {
+    const [name, setName] = useState('');
+    const [email, setEmail] = useState('');
+    const [users, setUsers] = useState<User[]>([]);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [errorMessage, setErrorMessage] = useState('');
+    const [successMessage, setSuccessMessage] = useState('');
 
-  const fetchUsers = async () => {
-    try {
-      const response = await axios.get('/api/users');
-      setUsers(response.data);
-    } catch (error) {
-      console.error('❌ Failed to fetch users:', error);
-    }
-  }
-
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMessage('');
-    setSuccessMessage('');
-
-    if (!name.trim() || !email.trim()) {
-      setErrorMessage('Name and email are required.');
-      return;
+    const fetchUsers = async () => {
+        try {
+            const response = await axios.get('/api/users');
+            setUsers(response.data);
+        } catch (error) {
+            console.error('❌ Failed to fetch users:', error);
+        }
     }
 
-    setIsSubmitting(true);
+    useEffect(() => {
+        fetchUsers();
+    }, []);
 
-    try {
-      await axios.post('/api/submit', { name, email });
-      setName('');
-      setEmail('');
-      setSuccessMessage('User successfully added!');
-      fetchUsers();
-    } catch (error: any) {
-      const msg = error.response?.data?.error || 'Something went wrong';
-      setErrorMessage(msg);
-    } finally {
-      setIsSubmitting(false);
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setErrorMessage('');
+        setSuccessMessage('');
+
+        if (!name.trim() || !email.trim()) {
+            setErrorMessage('Name and email are required.');
+            return;
+        }
+
+        setIsSubmitting(true);
+
+        try {
+            await axios.post('/api/submit', { name, email });
+            setName('');
+            setEmail('');
+            setSuccessMessage('User successfully added!');
+            fetchUsers();
+        } catch (error: any) {
+            const msg = error.response?.data?.error || 'Something went wrong';
+            setErrorMessage(msg);
+        } finally {
+            setIsSubmitting(false);
+        }
     }
-  }
-```
 
-Add messages to JSX:
+    return (
+        <>
+        <form
+            onSubmit={handleSubmit}
+            className="space-y-4 bg-white shadow p-6 rounded w-full max-w-md mx-auto"
+        >
+            <div>
+                <label
+                    className="block font-medium mb-1"
+                >
+                    Name:
+                </label>
+                <input
+                    type="text"
+                    value={name}
+                    onChange={e => setName(e.target.value)}
+                    required
+                    className="w-full border border-gray-300 rounded px-3 py-2"
+                />
+            </div>
 
-```tsx
-{errorMessage && <p className="text-red-600 text-center mt-2">{errorMessage}</p>}
-{successMessage && <p className="text-green-600 text-center mt-2">{successMessage}</p>}
+            <div>
+                <label className="block font-medium mb-1">Email:</label>
+                <input 
+                    type="email"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    required
+                    className="w-full border border-gray-300 rounded px-3 py-2"
+                />
+            </div>
+
+            <button 
+                type="submit"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded"
+            >
+                Submit
+            </button>
+        </form>
+
+        {errorMessage && <p className="text-red-600 text-center mt-2">{errorMessage}</p>}
+        {successMessage && <p className="text-green-600 text-center mt-2">{successMessage}</p>}
+
+        <hr className="my-6" />
+
+        <h2 className="text-xl font-bold text-center mb-2">Users ({users.length})</h2>
+
+        <ul className="space-y-2 max-w-md mx-auto">
+            {users.map(user => (
+                <li key={user.id} className="border-b pb-1 flex justify-between items-center">
+                    <span>{user.name} ({user.email})</span>
+                </li>
+            ))}
+        </ul>
+    </>
+    )
+}
+
+export default UserForm;
 ```
 
 ---
